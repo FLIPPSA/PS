@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Device Motion Tracking</title>
+    <title>Device Orientation Tracking</title>
     <style>
         #container {
             width: 500px;
@@ -16,10 +16,12 @@
             top: 0;
             left: 0;
             background-color: red;
+            transform-origin: center;
+            transition: transform 0.1s;
         }
         #data {
             margin-top: 10px;
-            color: blue;
+            color: white;
             font-family: Arial, sans-serif;
         }
     </style>
@@ -32,26 +34,22 @@
     <div id="data">
         <p>Latitude: <span id="latitude"></span></p>
         <p>Longitude: <span id="longitude"></span></p>
-        <p>Acceleration X: <span id="accelerationX"></span></p>
-        <p>Acceleration Y: <span id="accelerationY"></span></p>
+        <p>Heading: <span id="heading"></span></p>
     </div>
 
     <script>
         window.addEventListener("load", () => {
-    if (navigator.geolocation && window.DeviceMotionEvent) {
+    if (navigator.geolocation && window.DeviceOrientationEvent) {
         navigator.geolocation.watchPosition(updatePosition);
-        window.addEventListener("devicemotion", handleMotion);
+        window.addEventListener("deviceorientation", handleOrientation);
     } else {
-        alert("Geolocation or motion events are not supported by this browser.");
+        alert("Geolocation or device orientation events are not supported by this browser.");
     }
 });
 
 let arrowPositionX = 0;
 let arrowPositionY = 0;
-
-setInterval(() => {
-    updateArrow();
-}, 10);
+let arrowRotation = 0;
 
 function updatePosition(position) {
     const latitude = position.coords.latitude;
@@ -74,33 +72,23 @@ function updatePosition(position) {
     // Begrenzung der Pfeilposition innerhalb des Kastens
     arrowPositionX = Math.max(Math.min(arrowPositionX, containerWidth), 0);
     arrowPositionY = Math.max(Math.min(arrowPositionY, containerHeight), 0);
+    
+    updateArrow();
 }
 
-function handleMotion(event) {
-    const accelerationX = event.accelerationIncludingGravity.x; // Beschleunigung entlang der x-Achse
-    const accelerationY = event.accelerationIncludingGravity.y; // Beschleunigung entlang der y-Achse
+function handleOrientation(event) {
+    const alpha = event.alpha; // Heading-Winkel in Grad
 
-    document.getElementById("accelerationX").textContent = accelerationX.toFixed(2);
-    document.getElementById("accelerationY").textContent = accelerationY.toFixed(2);
+    document.getElementById("heading").textContent = alpha.toFixed(2);
 
-    const speed = 0.1; // Geschwindigkeit der Pfeilbewegung
+    arrowRotation = -alpha; // Invertieren des Winkels, um die Pfeilrichtung anzupassen
 
-    // Berechnung der neuen Pfeilposition basierend auf der aktuellen Position und der Beschleunigung
-    arrowPositionX += accelerationX * speed;
-    arrowPositionY += accelerationY * speed;
-
-    // Begrenzung der Pfeilposition innerhalb des Kastens
-    const container = document.getElementById("container");
-    const containerWidth = container.offsetWidth;
-    const containerHeight = container.offsetHeight;
-
-    arrowPositionX = Math.max(Math.min(arrowPositionX, containerWidth), 0);
-    arrowPositionY = Math.max(Math.min(arrowPositionY, containerHeight), 0);
+    updateArrow();
 }
 
 function updateArrow() {
     const arrow = document.getElementById("arrow");
-    arrow.style.transform = `translate(${arrowPositionX}px, ${arrowPositionY}px)`;
+    arrow.style.transform = `translate(${arrowPositionX}px, ${arrowPositionY}px) rotate(${arrowRotation}deg)`;
 }
 
     </script>
