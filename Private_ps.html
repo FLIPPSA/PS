@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device Motion Tracking</title>
+    <style>
+        #container {
+            width: 500px;
+            height: 500px;
+            background-color: black;
+            position: relative;
+        }
+        #arrow {
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: red;
+        }
+        #data {
+            margin-top: 10px;
+            color: blue;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="arrow"></div>
+    </div>
+
+    <div id="data">
+        <p>Latitude: <span id="latitude"></span></p>
+        <p>Longitude: <span id="longitude"></span></p>
+        <p>Acceleration X: <span id="accelerationX"></span></p>
+        <p>Acceleration Y: <span id="accelerationY"></span></p>
+    </div>
+
+    <script>
+        window.addEventListener("load", () => {
+    if (navigator.geolocation && window.DeviceMotionEvent) {
+        navigator.geolocation.watchPosition(updatePosition);
+        window.addEventListener("devicemotion", handleMotion);
+    } else {
+        alert("Geolocation or motion events are not supported by this browser.");
+    }
+});
+
+let arrowPositionX = 0;
+let arrowPositionY = 0;
+
+setInterval(() => {
+    updateArrow();
+}, 10);
+
+function updatePosition(position) {
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
+
+    document.getElementById("latitude").textContent = latitude.toFixed(6);
+    document.getElementById("longitude").textContent = longitude.toFixed(6);
+
+    const container = document.getElementById("container");
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+    const boxSize = 5; // Größe des Kastens in Metern
+
+    // Berechnung der Pixelkoordinaten basierend auf geografischen Koordinaten
+    const pixelPerMeterX = containerWidth / boxSize;
+    const pixelPerMeterY = containerHeight / boxSize;
+    arrowPositionX = (longitude - (position.coords.longitude - (boxSize / 2))) * pixelPerMeterX;
+    arrowPositionY = containerHeight - ((latitude - (position.coords.latitude - (boxSize / 2))) * pixelPerMeterY);
+
+    // Begrenzung der Pfeilposition innerhalb des Kastens
+    arrowPositionX = Math.max(Math.min(arrowPositionX, containerWidth), 0);
+    arrowPositionY = Math.max(Math.min(arrowPositionY, containerHeight), 0);
+}
+
+function handleMotion(event) {
+    const accelerationX = event.accelerationIncludingGravity.x; // Beschleunigung entlang der x-Achse
+    const accelerationY = event.accelerationIncludingGravity.y; // Beschleunigung entlang der y-Achse
+
+    document.getElementById("accelerationX").textContent = accelerationX.toFixed(2);
+    document.getElementById("accelerationY").textContent = accelerationY.toFixed(2);
+
+    const speed = 0.1; // Geschwindigkeit der Pfeilbewegung
+
+    // Berechnung der neuen Pfeilposition basierend auf der aktuellen Position und der Beschleunigung
+    arrowPositionX += accelerationX * speed;
+    arrowPositionY += accelerationY * speed;
+
+    // Begrenzung der Pfeilposition innerhalb des Kastens
+    const container = document.getElementById("container");
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+
+    arrowPositionX = Math.max(Math.min(arrowPositionX, containerWidth), 0);
+    arrowPositionY = Math.max(Math.min(arrowPositionY, containerHeight), 0);
+}
+
+function updateArrow() {
+    const arrow = document.getElementById("arrow");
+    arrow.style.transform = `translate(${arrowPositionX}px, ${arrowPositionY}px)`;
+}
+
+    </script>
+</body>
+</html>
