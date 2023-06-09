@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Device Orientation Tracking</title>
+    <title>Device Motion Tracking</title>
     <style>
         #container {
             width: 500px;
@@ -34,22 +34,27 @@
     <div id="data">
         <p>Latitude: <span id="latitude"></span></p>
         <p>Longitude: <span id="longitude"></span></p>
+        <p>Acceleration X: <span id="accelerationX"></span></p>
+        <p>Acceleration Y: <span id="accelerationY"></span></p>
         <p>Heading: <span id="heading"></span></p>
     </div>
 
     <script>
         window.addEventListener("load", () => {
-    if (navigator.geolocation && window.DeviceOrientationEvent) {
+    if (navigator.geolocation && window.DeviceMotionEvent && window.DeviceOrientationEvent) {
         navigator.geolocation.watchPosition(updatePosition);
+        window.addEventListener("devicemotion", handleMotion);
         window.addEventListener("deviceorientation", handleOrientation);
     } else {
-        alert("Geolocation or device orientation events are not supported by this browser.");
+        alert("Geolocation, device motion, or device orientation events are not supported by this browser.");
     }
 });
 
 let arrowPositionX = 0;
 let arrowPositionY = 0;
 let arrowRotation = 0;
+let previousAccelerationX = 0;
+let previousAccelerationY = 0;
 
 function updatePosition(position) {
     const latitude = position.coords.latitude;
@@ -72,7 +77,39 @@ function updatePosition(position) {
     // Begrenzung der Pfeilposition innerhalb des Kastens
     arrowPositionX = Math.max(Math.min(arrowPositionX, containerWidth), 0);
     arrowPositionY = Math.max(Math.min(arrowPositionY, containerHeight), 0);
-    
+
+    updateArrow();
+}
+
+function handleMotion(event) {
+    const accelerationX = event.accelerationIncludingGravity.x; // Beschleunigung in X-Richtung
+    const accelerationY = event.accelerationIncludingGravity.y; // Beschleunigung in Y-Richtung
+
+    document.getElementById("accelerationX").textContent = accelerationX.toFixed(2);
+    document.getElementById("accelerationY").textContent = accelerationY.toFixed(2);
+
+    // Differenz der Beschleunigung im Vergleich zur vorherigen Beschleunigung
+    const deltaAccelerationX = accelerationX - previousAccelerationX;
+    const deltaAccelerationY = accelerationY - previousAccelerationY;
+
+    // Konstante für die Geschwindigkeit der Pfeilbewegung
+    const speed = 0.1;
+
+    // Aktualisierung der Pfeilposition basierend auf der Beschleunigung
+    arrowPositionX += deltaAccelerationX * speed;
+    arrowPositionY -= deltaAccelerationY * speed; // Y-Achse invertiert für die Darstellung
+
+    // Begrenzung der Pfeilposition innerhalb des Kastens
+    const container = document.getElementById("container");
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+    arrowPositionX = Math.max(Math.min(arrowPositionX, containerWidth), 0);
+    arrowPositionY = Math.max(Math.min(arrowPositionY, containerHeight), 0);
+
+    // Speichern der aktuellen Beschleunigung für den nächsten Durchlauf
+    previousAccelerationX = accelerationX;
+    previousAccelerationY = accelerationY;
+
     updateArrow();
 }
 
